@@ -1,7 +1,6 @@
 package com.Elbaraka.baraka.service;
 
 import com.Elbaraka.baraka.entity.User;
-import com.Elbaraka.baraka.enums.UserRole;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,5 +18,5 @@ public interface UserService {
 
     void deactivateUser(Long id);
 
-    void changeUserRole(Long id, UserRole role);
+    void changeUserRole(Long id, String roleName);
 }
