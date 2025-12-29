@@ -1,23 +1,29 @@
 package com.Elbaraka.baraka.service.impl;
 
+import com.Elbaraka.baraka.entity.Role;
 import com.Elbaraka.baraka.entity.User;
-import com.Elbaraka.baraka.enums.UserRole;
 import com.Elbaraka.baraka.exception.BusinessException;
+import com.Elbaraka.baraka.exception.EmailAlreadyExistsException;
 import com.Elbaraka.baraka.exception.ResourceNotFoundException;
+import com.Elbaraka.baraka.repository.RoleRepository;
 import com.Elbaraka.baraka.repository.UserRepository;
 import com.Elbaraka.baraka.service.UserService;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
-    public UserServiceImpl(UserRepository u)
+    public UserServiceImpl(UserRepository u, RoleRepository roleRepository)
     {
         this.userRepository=u;
+        this.roleRepository=roleRepository;
     }
 
 
@@ -25,7 +31,7 @@ public class UserServiceImpl implements UserService {
     public User createUser(User user) {
         if(userRepository.existsByEmail(user.getEmail()))
         {
-            throw new BusinessException("mail already exist");
+            throw new EmailAlreadyExistsException("mail already exist");
         }
         return userRepository.save(user);
     }
@@ -70,10 +76,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void changeUserRole(Long id, UserRole role) {
-
-        User updated=getUserById(id);
-        updated.setRole(role);
+    public void changeUserRole(Long id, String roleName) {
+        User updated = getUserById(id);
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Rôle non trouvé: " + roleName));
+        
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+        updated.setRoles(roles);
         userRepository.save(updated);
     }
 }
