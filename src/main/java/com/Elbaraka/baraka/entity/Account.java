@@ -1,5 +1,6 @@
 package com.Elbaraka.baraka.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -32,5 +33,6 @@ public class Account {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false, unique = true)
+    @JsonBackReference
     private User owner;
 }
