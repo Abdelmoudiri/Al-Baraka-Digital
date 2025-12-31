@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="010-insert-permissions" author="elbaraka">
+        <!-- Permissions pour les opérations -->
+        <insert tableName="permissions">
+            <column name="name" value="CREATE_OPERATION"/>
+            <column name="description" value="Créer une nouvelle opération bancaire"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="READ_OPERATION"/>
+            <column name="description" value="Consulter les opérations bancaires"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="UPDATE_OPERATION"/>
+            <column name="description" value="Modifier une opération bancaire"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="DELETE_OPERATION"/>
+            <column name="description" value="Supprimer une opération bancaire"/>
+        </insert>
+
+        <!-- Permissions pour les comptes -->
+        <insert tableName="permissions">
+            <column name="name" value="CREATE_ACCOUNT"/>
+            <column name="description" value="Créer un nouveau compte bancaire"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="READ_ACCOUNT"/>
+            <column name="description" value="Consulter les comptes bancaires"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="UPDATE_ACCOUNT"/>
+            <column name="description" value="Modifier un compte bancaire"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="DELETE_ACCOUNT"/>
+            <column name="description" value="Supprimer un compte bancaire"/>
+        </insert>
+
+        <!-- Permissions pour les utilisateurs -->
+        <insert tableName="permissions">
+            <column name="name" value="CREATE_USER"/>
+            <column name="description" value="Créer un nouvel utilisateur"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="READ_USER"/>
+            <column name="description" value="Consulter les utilisateurs"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="UPDATE_USER"/>
+            <column name="description" value="Modifier un utilisateur"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="DELETE_USER"/>
+            <column name="description" value="Supprimer un utilisateur"/>
+        </insert>
+
+        <!-- Permissions pour les documents -->
+        <insert tableName="permissions">
+            <column name="name" value="UPLOAD_DOCUMENT"/>
+            <column name="description" value="Télécharger des documents"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="READ_DOCUMENT"/>
+            <column name="description" value="Consulter les documents"/>
+        </insert>
+        <insert tableName="permissions">
+            <column name="name" value="DELETE_DOCUMENT"/>
+            <column name="description" value="Supprimer des documents"/>
+        </insert>
+
+        <!-- Permissions pour les rôles -->
+        <insert tableName="permissions">
+            <column name="name" value="MANAGE_ROLES"/>
+            <column name="description" value="Gérer les rôles et permissions"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="010-insert-roles" author="elbaraka">
+        <!-- Rôle ADMIN -->
+        <insert tableName="roles">
+            <column name="name" value="ADMIN"/>
+            <column name="description" value="Administrateur avec tous les droits"/>
+        </insert>
+
+        <!-- Rôle MANAGER -->
+        <insert tableName="roles">
+            <column name="name" value="MANAGER"/>
+            <column name="description" value="Gestionnaire avec droits de gestion"/>
+        </insert>
+
+        <!-- Rôle CLIENT -->
+        <insert tableName="roles">
+            <column name="name" value="CLIENT"/>
+            <column name="description" value="Client avec accès limité"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="010-assign-permissions-to-admin" author="elbaraka">
+        <!-- ADMIN a toutes les permissions -->
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'CREATE_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPDATE_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'DELETE_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'CREATE_ACCOUNT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_ACCOUNT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPDATE_ACCOUNT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'DELETE_ACCOUNT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'CREATE_USER')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_USER')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPDATE_USER')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'DELETE_USER')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPLOAD_DOCUMENT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_DOCUMENT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'DELETE_DOCUMENT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'ADMIN')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'MANAGE_ROLES')"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="010-assign-permissions-to-manager" author="elbaraka">
+        <!-- MANAGER a certaines permissions -->
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'CREATE_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPDATE_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_ACCOUNT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPDATE_ACCOUNT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_USER')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPLOAD_DOCUMENT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'MANAGER')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_DOCUMENT')"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="010-assign-permissions-to-client" author="elbaraka">
+        <!-- CLIENT a des permissions limitées -->
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'CLIENT')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_OPERATION')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'CLIENT')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_ACCOUNT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'CLIENT')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'UPLOAD_DOCUMENT')"/>
+        </insert>
+        <insert tableName="roles_permissions">
+            <column name="role_id" valueComputed="(SELECT id FROM roles WHERE name = 'CLIENT')"/>
+            <column name="permission_id" valueComputed="(SELECT id FROM permissions WHERE name = 'READ_DOCUMENT')"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
