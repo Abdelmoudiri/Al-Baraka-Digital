@@ -1,0 +1,12 @@
+# Format: JIRA-XXX: Description du commit
+# 
+# Exemple: BARAKA-123: Ajout de l'enum OperationStatus
+#
+# Types de commits recommandés:
+# - feat: Nouvelle fonctionnalité
+# - fix: Correction de bug
+# - refactor: Refactoring du code
+# - docs: Documentation
+# - test: Ajout de tests
+#
+# N'oubliez pas d'inclure le numéro du ticket Jira au début!
