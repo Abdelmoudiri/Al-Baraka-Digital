@@ -49,6 +49,7 @@ public class OperationService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
     }
 
+
     @Transactional
     public OperationResponse createDeposit(OperationRequest request) {
         User user = getCurrentUser();
@@ -63,12 +64,10 @@ public class OperationService {
         operation.setAmount(request.getAmount());
         operation.setAccountSource(account);
 
-        // Validation automatique si montant <= 10 000 DH
         if (request.getAmount().compareTo(VALIDATION_THRESHOLD) <= 0) {
             operation.setStatus(OperationStatus.COMPLETED);
             operation.setExecutedAt(LocalDateTime.now());
             
-            // Mise à jour du solde
             account.setBalance(account.getBalance().add(request.getAmount()));
             accountRepository.save(account);
         } else {
@@ -88,7 +87,6 @@ public class OperationService {
             throw new RuntimeException("Compte non trouvé pour cet utilisateur");
         }
 
-        // Vérifier solde suffisant
         if (account.getBalance().compareTo(request.getAmount()) < 0) {
             throw new RuntimeException("Solde insuffisant");
         }
@@ -98,7 +96,6 @@ public class OperationService {
         operation.setAmount(request.getAmount());
         operation.setAccountSource(account);
 
-        // Validation automatique si montant <= 10 000 DH
         if (request.getAmount().compareTo(VALIDATION_THRESHOLD) <= 0) {
             operation.setStatus(OperationStatus.COMPLETED);
             operation.setExecutedAt(LocalDateTime.now());
@@ -123,16 +120,14 @@ public class OperationService {
             throw new RuntimeException("Compte source non trouvé");
         }
 
-        // Vérifier compte destination
+        
         Account destinationAccount = accountRepository.findByAccountNumber(request.getDestinationAccountNumber())
                 .orElseThrow(() -> new RuntimeException("Compte destination non trouvé"));
 
-        // Vérifier que ce n'est pas le même compte
         if (sourceAccount.getId().equals(destinationAccount.getId())) {
             throw new RuntimeException("Impossible de transférer vers le même compte");
         }
 
-        // Vérifier solde suffisant
         if (sourceAccount.getBalance().compareTo(request.getAmount()) < 0) {
             throw new RuntimeException("Solde insuffisant");
         }
@@ -143,12 +138,10 @@ public class OperationService {
         operation.setAccountSource(sourceAccount);
         operation.setAccountDestination(destinationAccount);
 
-        // Validation automatique si montant <= 10 000 DH
         if (request.getAmount().compareTo(VALIDATION_THRESHOLD) <= 0) {
             operation.setStatus(OperationStatus.COMPLETED);
             operation.setExecutedAt(LocalDateTime.now());
             
-            // Mise à jour des soldes
             sourceAccount.setBalance(sourceAccount.getBalance().subtract(request.getAmount()));
             destinationAccount.setBalance(destinationAccount.getBalance().add(request.getAmount()));
             accountRepository.save(sourceAccount);
@@ -200,7 +193,6 @@ public class OperationService {
             throw new RuntimeException("Cette opération n'est pas en attente de validation");
         }
 
-        // Vérifier qu'un document est fourni pour les montants > 10 000 DH
         if (operation.getAmount().compareTo(VALIDATION_THRESHOLD) > 0) {
             long documentCount = documentRepository.countByOperationId(operationId);
             if (documentCount == 0) {
