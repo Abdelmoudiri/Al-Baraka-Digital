@@ -1,0 +1,58 @@
+# Build directories
+target/
+build/
+bin/
+out/
+
+# IDE directories
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+HELP.md
+LICENSE
+*.md
+
+# Test files
+src/test/
+
+# Uploads
+uploads/
+
+# Maven wrapper (optional - keep if needed)
+.mvn/
+mvnw
+mvnw.cmd
