@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head}"></head>
+<body class="bg-light">
+
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-5">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="text-primary">
+                            <i class="bi bi-bank2 display-4"></i>
+                        </h2>
+                        <h3>Al Baraka Digital</h3>
+                        <p class="text-muted">Banque Digitale Islamique</p>
+                    </div>
+                    
+                    <!-- Error Messages -->
+                    <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Nom d'utilisateur ou mot de passe incorrect.
+                    </div>
+                    
+                    <div th:if="${param.logout}" class="alert alert-success" role="alert">
+                        <i class="bi bi-check-circle"></i> 
+                        Vous avez été déconnecté avec succès.
+                    </div>
+                    
+                    <div th:if="${param.oauth2error}" class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Erreur lors de la connexion OAuth2.
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <form th:action="@{/login}" method="post">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="bi bi-person"></i> Nom d'utilisateur
+                            </label>
+                            <input type="text" class="form-control" id="username" 
+                                   name="username" required autofocus>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-lock"></i> Mot de passe
+                            </label>
+                            <input type="password" class="form-control" id="password" 
+                                   name="password" required>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" 
+                                   id="remember-me" name="remember-me">
+                            <label class="form-check-label" for="remember-me">
+                                Se souvenir de moi (30 jours)
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="bi bi-box-arrow-in-right"></i> Se connecter
+                        </button>
+                    </form>
+                    
+                    <div class="text-center">
+                        <div class="mb-2">
+                            <small class="text-muted">ou</small>
+                        </div>
+                        
+                        <!-- OAuth2 Login -->
+                        <a th:href="@{/oauth2/authorization/google}" 
+                           class="btn btn-outline-danger w-100">
+                            <i class="bi bi-google"></i> Connexion avec Google
+                        </a>
+                        
+                        <hr class="my-4">
+                        
+                        <p class="text-muted small">
+                            Pas encore de compte ? 
+                            <a th:href="@{/register}" class="text-primary">S'inscrire</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3 text-muted small">
+                <p>&copy; 2026 Al Baraka Digital Bank</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout :: scripts}"></div>
+
+</body>
+</html>
