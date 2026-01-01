@@ -16,5 +16,7 @@
     <include file="db/changelog/changes/010-insert-permissions-and-roles.xml"/>
     <include file="db/changelog/changes/011-remove-role-column-from-users.xml"/>
     <include file="db/changelog/changes/005-insert-fake-data-users-table.xml"/>
+    <include file="db/changelog/changes/012-create-ai-validation-results-table.xml"/>
+    <include file="db/changelog/changes/013-create-remember-me-tokens-table.xml"/>
 
 </databaseChangeLog>
