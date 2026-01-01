@@ -19,9 +19,7 @@
             <column name="full_name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="role" type="VARCHAR(50)">
-                <constraints nullable="false"/>
-            </column>
+            <!-- role column removed - roles are now managed through users_roles table -->
             <column name="active" type="BOOLEAN" defaultValueBoolean="true">
                 <constraints nullable="false"/>
             </column>

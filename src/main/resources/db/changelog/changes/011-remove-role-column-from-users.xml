@@ -5,8 +5,9 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
+    <!-- This changeset is now a no-op as role column was removed from 001-create-users-table.xml -->
     <changeSet id="011-remove-role-column-from-users" author="elbaraka">
-        <dropColumn tableName="users" columnName="role"/>
+        <comment>No operation - role column no longer exists in initial schema</comment>
     </changeSet>
 
 </databaseChangeLog>

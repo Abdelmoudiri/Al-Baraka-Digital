@@ -6,12 +6,9 @@ import com.Elbaraka.baraka.entity.Operation;
 import com.Elbaraka.baraka.enums.AiDecision;
 import com.Elbaraka.baraka.repository.AiValidationResultRepository;
 import com.Elbaraka.baraka.repository.DocumentRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,15 +19,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service de validation IA des opérations bancaires.
+ * Note: L'intégration Spring AI est temporairement désactivée en raison de l'incompatibilité avec Spring Boot 4.0.0.
+ * Le service retourne automatiquement NEED_HUMAN_REVIEW jusqu'à ce que Spring AI soit compatible.
+ */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class AiValidationService {
 
-    private final ChatModel chatModel;
     private final AiValidationResultRepository aiValidationResultRepository;
     private final DocumentRepository documentRepository;
     private final Tika tika = new Tika();
+    
+    // ChatModel désactivé temporairement - incompatible avec Spring Boot 4.0.0
+    // private final ChatModel chatModel;
+
+    @Autowired
+    public AiValidationService(AiValidationResultRepository aiValidationResultRepository,
+                               DocumentRepository documentRepository) {
+        this.aiValidationResultRepository = aiValidationResultRepository;
+        this.documentRepository = documentRepository;
+    }
 
     private static final String VALIDATION_PROMPT_TEMPLATE = """
             Tu es un expert bancaire spécialisé dans la validation de documents financiers.
@@ -90,21 +100,19 @@ public class AiValidationService {
                     "Document illisible ou format non supporté", startTime);
             }
 
-            Map<String, Object> promptVariables = new HashMap<>();
-            promptVariables.put("operationType", operation.getType().toString());
-            promptVariables.put("declaredAmount", operation.getAmount().toString());
-            promptVariables.put("operationDate", operation.getCreatedAt().toString());
-            promptVariables.put("sourceAccount", operation.getAccountSource().getAccountNumber());
-            promptVariables.put("documentText", extractedText.substring(0, Math.min(extractedText.length(), 2000)));
+            // Spring AI désactivé - retourne NEED_HUMAN_REVIEW par défaut
+            log.info("Spring AI temporairement désactivé - validation manuelle requise pour l'opération #{}", operation.getId());
+            return createDefaultResult(operation, AiDecision.NEED_HUMAN_REVIEW,
+                "Validation IA temporairement indisponible - vérification manuelle requise. " +
+                "Document extrait avec succès (" + extractedText.length() + " caractères).", startTime);
 
-            PromptTemplate promptTemplate = new PromptTemplate(VALIDATION_PROMPT_TEMPLATE);
+            /* Code Spring AI désactivé temporairement - incompatible avec Spring Boot 4.0.0
             Prompt prompt = promptTemplate.create(promptVariables);
-
             String aiResponse = chatModel.call(prompt).getResult().getOutput().getContent();
             log.info("Réponse de l'IA reçue : {}", aiResponse);
-
             AiValidationResult result = parseAiResponse(aiResponse, operation, startTime);
             return aiValidationResultRepository.save(result);
+            */
 
         } catch (Exception e) {
             log.error("Erreur lors de l'analyse IA de l'opération #{}", operation.getId(), e);
