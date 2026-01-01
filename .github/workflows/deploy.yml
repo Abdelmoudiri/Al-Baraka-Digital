@@ -1,0 +1,118 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: https://albaraka.digital
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          
+      - name: Create .env file
+        run: |
+          cat << EOF > .env.production
+          SPRING_AI_OPENAI_API_KEY=${{ secrets.SPRING_AI_OPENAI_API_KEY }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE=baraka
+          MYSQL_USER=baraka_user
+          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          SPRING_PROFILES_ACTIVE=prod
+          EOF
+          
+      - name: Copy files to server
+        run: |
+          scp -r docker-compose.yml .env.production nginx/ \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/albaraka/
+            
+      - name: Deploy with Docker Compose
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /opt/albaraka
+            mv .env.production .env
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d
+            docker-compose ps
+          EOF
+          
+      - name: Wait for application to be healthy
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            echo "Waiting for application to be healthy..."
+            for i in {1..30}; do
+              if docker-compose exec -T app wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health 2>&1 | grep -q "200 OK"; then
+                echo "Application is healthy!"
+                exit 0
+              fi
+              echo "Attempt $i/30: Application not ready yet..."
+              sleep 10
+            done
+            echo "Application failed to become healthy"
+            exit 1
+          EOF
+          
+      - name: Run database migrations
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /opt/albaraka
+            docker-compose exec -T app java -cp /app/app.jar \
+              org.springframework.boot.loader.JarLauncher \
+              --spring.liquibase.enabled=true
+          EOF
+          
+      - name: Deployment summary
+        run: |
+          echo "### Deployment Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "Deployment completed successfully!"
+          
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /opt/albaraka
+            docker-compose down
+            # Rollback to previous version if needed
+            echo "Deployment failed - manual intervention required"
+          EOF
