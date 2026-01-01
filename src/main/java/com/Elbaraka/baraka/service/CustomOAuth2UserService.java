@@ -39,12 +39,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         log.info("OAuth2 login attempt for email: {}", email);
         
         // Find or create user
-        User user = userRepository.findByUsername(email)
+        User user = userRepository.findByEmail(email)
                 .orElseGet(() -> createNewUser(email, name));
         
-        // Update last login
-        user.setLastLogin(java.time.LocalDateTime.now());
-        userRepository.save(user);
+        // User entity doesn't have lastLogin field, so we skip this
+        // If needed, add lastLogin field to User entity later
         
         // Return OAuth2User with user authorities
         return new DefaultOAuth2User(
@@ -54,33 +53,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         );
     }
     
-    private User createNewUser(String email, String name) {
+    private User createNewUser(String email, String fullName) {
         log.info("Creating new user from OAuth2: {}", email);
         
         User user = new User();
-        user.setUsername(email);
         user.setEmail(email);
-        user.setFirstName(extractFirstName(name));
-        user.setLastName(extractLastName(name));
+        user.setFullName(fullName != null && !fullName.trim().isEmpty() ? fullName : "OAuth2 User");
+        user.setPassword(""); // OAuth2 users don't need password
         user.setActive(true);
-        user.setCreatedAt(java.time.LocalDateTime.now());
         
         return userRepository.save(user);
-    }
-    
-    private String extractFirstName(String fullName) {
-        if (fullName == null || fullName.trim().isEmpty()) {
-            return "User";
-        }
-        String[] parts = fullName.trim().split("\\s+");
-        return parts[0];
-    }
-    
-    private String extractLastName(String fullName) {
-        if (fullName == null || fullName.trim().isEmpty()) {
-            return "";
-        }
-        String[] parts = fullName.trim().split("\\s+");
-        return parts.length > 1 ? parts[parts.length - 1] : "";
     }
 }
