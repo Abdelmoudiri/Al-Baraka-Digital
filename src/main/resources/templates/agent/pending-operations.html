@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{layout :: head}">
+    <title>Dashboard Agent - Opérations en Attente</title>
+</head>
+<body>
+
+<div th:replace="~{layout :: navbar}"></div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 p-0">
+            <div th:replace="~{layout :: sidebar('operations')}"></div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-clipboard-check"></i> Opérations en Attente
+                </h2>
+                <span class="badge bg-warning text-dark" th:text="${pendingOperations.size()} + ' en attente'"></span>
+            </div>
+            
+            <!-- AI Validation Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center shadow-sm border-success">
+                        <div class="card-body">
+                            <i class="bi bi-robot display-4 text-success"></i>
+                            <h5 class="mt-2">IA - Approuvées</h5>
+                            <h3 th:text="${aiApprovedCount}"></h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center shadow-sm border-danger">
+                        <div class="card-body">
+                            <i class="bi bi-robot display-4 text-danger"></i>
+                            <h5 class="mt-2">IA - Rejetées</h5>
+                            <h3 th:text="${aiRejectedCount}"></h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center shadow-sm border-warning">
+                        <div class="card-body">
+                            <i class="bi bi-person-check display-4 text-warning"></i>
+                            <h5 class="mt-2">Révision Humaine</h5>
+                            <h3 th:text="${humanReviewCount}"></h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center shadow-sm border-info">
+                        <div class="card-body">
+                            <i class="bi bi-hourglass-split display-4 text-info"></i>
+                            <h5 class="mt-2">Total en Attente</h5>
+                            <h3 th:text="${pendingOperations.size()}"></h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pending Operations Table -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-task"></i> Liste des Opérations
+                        </h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshPage()">
+                                <i class="bi bi-arrow-clockwise"></i> Actualiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div th:if="${#lists.isEmpty(pendingOperations)}" class="text-center text-muted py-5">
+                        <i class="bi bi-check-circle display-1 text-success"></i>
+                        <p class="mt-3 h5">Aucune opération en attente</p>
+                        <p>Toutes les opérations ont été traitées.</p>
+                    </div>
+                    
+                    <div th:if="${!#lists.isEmpty(pendingOperations)}" class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Client</th>
+                                    <th>Compte</th>
+                                    <th>Type</th>
+                                    <th>Montant</th>
+                                    <th>Date</th>
+                                    <th>IA Decision</th>
+                                    <th>Confiance</th>
+                                    <th>Documents</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="operation : ${pendingOperations}">
+                                    <td>
+                                        <strong th:text="'#' + ${operation.id}"></strong>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-person"></i>
+                                        <span th:text="${operation.account.user.firstName} + ' ' + ${operation.account.user.lastName}"></span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted" th:text="${operation.account.accountNumber}"></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge" 
+                                              th:classappend="${operation.type == 'DEPOSIT'} ? 'bg-success' : (${operation.type == 'WITHDRAWAL'} ? 'bg-danger' : 'bg-primary')"
+                                              th:text="${operation.type}">
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong th:text="${#numbers.formatDecimal(operation.amount, 1, 2)} + ' DH'"></strong>
+                                    </td>
+                                    <td>
+                                        <small th:text="${#temporals.format(operation.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
+                                    </td>
+                                    <td>
+                                        <span th:if="${operation.aiValidationResult != null}" 
+                                              class="badge"
+                                              th:classappend="${operation.aiValidationResult.decision == 'APPROVE'} ? 'bg-success' : (${operation.aiValidationResult.decision == 'REJECT'} ? 'bg-danger' : 'bg-warning')"
+                                              th:text="${operation.aiValidationResult.decision}">
+                                        </span>
+                                        <span th:unless="${operation.aiValidationResult != null}" class="text-muted">
+                                            <i class="bi bi-hourglass"></i> Analyse...
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${operation.aiValidationResult != null}">
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" 
+                                                     th:classappend="${operation.aiValidationResult.confidenceScore >= 80} ? 'bg-success' : (${operation.aiValidationResult.confidenceScore >= 50} ? 'bg-warning' : 'bg-danger')"
+                                                     th:style="'width: ' + ${operation.aiValidationResult.confidenceScore} + '%'"
+                                                     th:text="${operation.aiValidationResult.confidenceScore} + '%'">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info" th:text="${operation.documents.size()} + ' docs'"></span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a th:href="@{/operations/{id}/review(id=${operation.id})}" 
+                                               class="btn btn-outline-primary" title="Examiner">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-success" 
+                                                    title="Approuver"
+                                                    th:onclick="'approveOperation(' + ${operation.id} + ')'">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger" 
+                                                    title="Rejeter"
+                                                    th:onclick="'rejectOperation(' + ${operation.id} + ')'">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout :: footer}"></div>
+<div th:replace="~{layout :: scripts}"></div>
+
+<script>
+    function refreshPage() {
+        location.reload();
+    }
+    
+    function approveOperation(operationId) {
+        if (confirm('Êtes-vous sûr de vouloir approuver cette opération ?')) {
+            fetch(`/api/operations/${operationId}/approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Opération approuvée avec succès');
+                    location.reload();
+                } else {
+                    alert('Erreur lors de l\'approbation');
+                }
+            });
+        }
+    }
+    
+    function rejectOperation(operationId) {
+        const reason = prompt('Raison du rejet :');
+        if (reason) {
+            fetch(`/api/operations/${operationId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Opération rejetée');
+                    location.reload();
+                } else {
+                    alert('Erreur lors du rejet');
+                }
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
