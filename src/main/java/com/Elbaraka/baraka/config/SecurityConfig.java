@@ -1,5 +1,8 @@
 package com.Elbaraka.baraka.config;
 
+import com.Elbaraka.baraka.service.CustomOAuth2UserService;
+import com.Elbaraka.baraka.service.CustomPersistentTokenRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,12 +19,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomPersistentTokenRepository persistentTokenRepository;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
@@ -31,9 +33,28 @@ public class SecurityConfig {
                 .sessionManagement(session->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**", "/oauth2/**", "/login/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                // OAuth2 login configuration
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .defaultSuccessUrl("/dashboard", true)
+                        .failureUrl("/login?error=oauth2")
+                )
+                // Remember-me configuration
+                .rememberMe(remember -> remember
+                        .key("AlBarakaSecretKey2026")
+                        .tokenRepository(persistentTokenRepository)
+                        .tokenValiditySeconds(30 * 24 * 60 * 60) // 30 days
+                        .userDetailsService(username -> {
+                            // This will be handled by UserDetailsService
+                            return null;
+                        })
                 );
+        
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
                 
@@ -45,11 +66,10 @@ public class SecurityConfig {
     {
         return new BCryptPasswordEncoder();
     }
+    
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
             throws Exception {
         return configuration.getAuthenticationManager();
     }
-    
-
 }
