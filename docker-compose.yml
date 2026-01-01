@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: albaraka-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-baraka}
+      MYSQL_USER: ${MYSQL_USER:-baraka_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-baraka_pass}
+      TZ: Africa/Casablanca
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - albaraka-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Spring Boot Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: albaraka-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-baraka}?useSSL=false&serverTimezone=Africa/Casablanca&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-baraka_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-baraka_pass}
+      
+      # Spring AI OpenAI Configuration (REQUIRED)
+      SPRING_AI_OPENAI_API_KEY: ${SPRING_AI_OPENAI_API_KEY}
+      SPRING_AI_OPENAI_MODEL: ${SPRING_AI_OPENAI_MODEL:-gpt-4o-mini}
+      
+      # OAuth2 Google Configuration (REQUIRED)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      
+      # Application Configuration
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      FILE_UPLOAD_DIR: /app/uploads
+      
+      # JVM Options
+      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC"
+      
+    volumes:
+      - app_uploads:/app/uploads
+      - ./logs:/app/logs
+    ports:
+      - "8080:8080"
+    networks:
+      - albaraka-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: albaraka-nginx
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - albaraka-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  albaraka-network:
+    driver: bridge
+    name: albaraka-network
+
+volumes:
+  mysql_data:
+    name: albaraka-mysql-data
+  app_uploads:
+    name: albaraka-uploads
