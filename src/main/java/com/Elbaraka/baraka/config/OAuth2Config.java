@@ -1,9 +1,9 @@
 package com.Elbaraka.baraka.config;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
@@ -13,9 +13,10 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 /**
  * OAuth2 configuration for Google authentication.
  * Provides client registration for OAuth2 login flow.
+ * Disabled in test profile.
  */
 @Configuration
-@ConditionalOnProperty(name = "google.client.id", matchIfMissing = false)
+@Profile("!test")
 public class OAuth2Config {
 
     @Value("${google.client.id:}")
@@ -31,17 +32,14 @@ public class OAuth2Config {
      */
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
+        if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
+            // Return empty repository if not configured
+            return registrationId -> null;
+        }
         return new InMemoryClientRegistrationRepository(googleClientRegistration());
     }
     
     private ClientRegistration googleClientRegistration() {
-        if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
-            throw new IllegalStateException(
-                "Google OAuth2 credentials not configured. " +
-                "Set google.client.id and google.client.secret properties."
-            );
-        }
-        
         return ClientRegistration.withRegistrationId("google")
                 .clientId(clientId)
                 .clientSecret(clientSecret)
