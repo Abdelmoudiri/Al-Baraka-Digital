@@ -1,10 +1,11 @@
 name: Deploy to Production
 
 on:
-  push:
-    branches: [ main ]
-    tags:
-      - 'v*'
+  # Désactivé - Déclencher manuellement uniquement
+  # push:
+  #   branches: [ main ]
+  #   tags:
+  #     - 'v*'
   workflow_dispatch:
     inputs:
       environment:
@@ -41,7 +42,7 @@ jobs:
       - name: Create .env file
         run: |
           cat << EOF > .env.production
-          SPRING_AI_OPENAI_API_KEY=${{ secrets.SPRING_AI_OPENAI_API_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
