@@ -40,15 +40,6 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           
-      - name: Generate test coverage report
-        run: mvn -B jacoco:report
-        
-      - name: Upload test coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./target/site/jacoco/jacoco.xml
-          fail_ci_if_error: false
-          
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
