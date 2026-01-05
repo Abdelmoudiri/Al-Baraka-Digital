@@ -23,7 +23,7 @@ jobs:
           cache: 'maven'
           
       - name: Cache Maven packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -50,7 +50,7 @@ jobs:
           fail_ci_if_error: false
           
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: albaraka-jar
           path: target/*.jar
