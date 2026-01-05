@@ -1,5 +1,7 @@
 package com.Elbaraka.baraka.config;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -13,13 +15,17 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
  * Provides client registration for OAuth2 login flow.
  */
 @Configuration
+@ConditionalOnProperty(name = "google.client.id", matchIfMissing = false)
 public class OAuth2Config {
+
+    @Value("${google.client.id:}")
+    private String clientId;
+
+    @Value("${google.client.secret:}")
+    private String clientSecret;
     
     /**
      * Configure Google OAuth2 client registration.
-     * Requires environment variables:
-     * - GOOGLE_CLIENT_ID
-     * - GOOGLE_CLIENT_SECRET
      *
      * @return client registration repository
      */
@@ -29,13 +35,10 @@ public class OAuth2Config {
     }
     
     private ClientRegistration googleClientRegistration() {
-        String clientId = System.getenv("GOOGLE_CLIENT_ID");
-        String clientSecret = System.getenv("GOOGLE_CLIENT_SECRET");
-        
-        if (clientId == null || clientSecret == null) {
+        if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
             throw new IllegalStateException(
                 "Google OAuth2 credentials not configured. " +
-                "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables."
+                "Set google.client.id and google.client.secret properties."
             );
         }
         
