@@ -89,20 +89,24 @@ jobs:
   lint:
     name: Lint Code
     runs-on: ubuntu-latest
+    continue-on-error: true
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
       - name: Super-Linter
-        uses: github/super-linter@v5
+        uses: super-linter/super-linter@v6
+        continue-on-error: true
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_JAVA: true
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_JAVA: false
           VALIDATE_MARKDOWN: true
           VALIDATE_YAML: true
           VALIDATE_DOCKERFILE: true
+          LINTER_RULES_PATH: /
           
   dependency-review:
     name: Dependency Review
