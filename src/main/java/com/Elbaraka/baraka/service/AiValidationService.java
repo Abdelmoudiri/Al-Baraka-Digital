@@ -6,11 +6,16 @@ import com.Elbaraka.baraka.entity.Operation;
 import com.Elbaraka.baraka.enums.AiDecision;
 import com.Elbaraka.baraka.repository.AiValidationResultRepository;
 import com.Elbaraka.baraka.repository.DocumentRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -21,8 +26,7 @@ import java.util.Map;
 
 /**
  * Service de validation IA des opérations bancaires.
- * Note: L'intégration Spring AI est temporairement désactivée en raison de l'incompatibilité avec Spring Boot 4.0.0.
- * Le service retourne automatiquement NEED_HUMAN_REVIEW jusqu'à ce que Spring AI soit compatible.
+ * Utilise l'API Google Gemini pour l'analyse des documents.
  */
 @Service
 @Slf4j
@@ -31,9 +35,16 @@ public class AiValidationService {
     private final AiValidationResultRepository aiValidationResultRepository;
     private final DocumentRepository documentRepository;
     private final Tika tika = new Tika();
-    
-    // ChatModel désactivé temporairement - incompatible avec Spring Boot 4.0.0
-    // private final ChatModel chatModel;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${gemini.api.key:}")
+    private String geminiApiKey;
+
+    @Value("${gemini.api.model:gemini-1.5-flash}")
+    private String geminiModel;
+
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
 
     @Autowired
     public AiValidationService(AiValidationResultRepository aiValidationResultRepository,
@@ -48,13 +59,13 @@ public class AiValidationService {
             Analyse le document suivant et détermine s'il justifie correctement l'opération bancaire :
             
             **Informations de l'opération :**
-            - Type : {operationType}
-            - Montant déclaré : {declaredAmount} DH
-            - Date de création : {operationDate}
-            - Compte source : {sourceAccount}
+            - Type : %s
+            - Montant déclaré : %s DH
+            - Date de création : %s
+            - Compte source : %s
             
             **Contenu du document extrait :**
-            {documentText}
+            %s
             
             **Critères d'analyse :**
             1. Le montant dans le document correspond-il au montant déclaré ?
@@ -68,7 +79,7 @@ public class AiValidationService {
             - Si le document est invalide, falsifié ou incohérent → Réponds "DECISION: REJECT"
             - Si tu as des doutes ou besoin d'une vérification humaine → Réponds "DECISION: NEED_HUMAN_REVIEW"
             
-            Fournis une réponse structurée sous ce format :
+            Fournis une réponse structurée sous ce format EXACTEMENT :
             DECISION: [APPROVE/REJECT/NEED_HUMAN_REVIEW]
             CONFIDENCE: [0.0 à 1.0]
             EXTRACTED_AMOUNT: [montant trouvé dans le document ou NA]
@@ -100,24 +111,91 @@ public class AiValidationService {
                     "Document illisible ou format non supporté", startTime);
             }
 
-            // Spring AI désactivé - retourne NEED_HUMAN_REVIEW par défaut
-            log.info("Spring AI temporairement désactivé - validation manuelle requise pour l'opération #{}", operation.getId());
-            return createDefaultResult(operation, AiDecision.NEED_HUMAN_REVIEW,
-                "Validation IA temporairement indisponible - vérification manuelle requise. " +
-                "Document extrait avec succès (" + extractedText.length() + " caractères).", startTime);
+            // Vérifier si la clé API Gemini est configurée
+            if (geminiApiKey == null || geminiApiKey.isEmpty()) {
+                log.warn("Clé API Gemini non configurée - validation manuelle requise");
+                return createDefaultResult(operation, AiDecision.NEED_HUMAN_REVIEW,
+                    "Validation IA non configurée - vérification manuelle requise. " +
+                    "Document extrait avec succès (" + extractedText.length() + " caractères).", startTime);
+            }
 
-            /* Code Spring AI désactivé temporairement - incompatible avec Spring Boot 4.0.0
-            Prompt prompt = promptTemplate.create(promptVariables);
-            String aiResponse = chatModel.call(prompt).getResult().getOutput().getContent();
-            log.info("Réponse de l'IA reçue : {}", aiResponse);
+            // Appel à l'API Gemini
+            String aiResponse = callGeminiApi(operation, extractedText);
+            
+            if (aiResponse == null || aiResponse.isEmpty()) {
+                log.warn("Réponse vide de l'API Gemini");
+                return createDefaultResult(operation, AiDecision.NEED_HUMAN_REVIEW,
+                    "Erreur de communication avec l'IA - vérification manuelle requise.", startTime);
+            }
+
+            log.info("Réponse de Gemini reçue : {}", aiResponse);
             AiValidationResult result = parseAiResponse(aiResponse, operation, startTime);
             return aiValidationResultRepository.save(result);
-            */
 
         } catch (Exception e) {
             log.error("Erreur lors de l'analyse IA de l'opération #{}", operation.getId(), e);
             return createDefaultResult(operation, AiDecision.NEED_HUMAN_REVIEW,
                 "Erreur technique lors de l'analyse : " + e.getMessage(), startTime);
+        }
+    }
+
+    /**
+     * Appelle l'API Gemini pour analyser le document
+     */
+    private String callGeminiApi(Operation operation, String documentText) {
+        try {
+            String url = String.format(GEMINI_API_URL, geminiModel, geminiApiKey);
+            
+            // Construire le prompt
+            String prompt = String.format(VALIDATION_PROMPT_TEMPLATE,
+                operation.getType().name(),
+                operation.getAmount().toString(),
+                operation.getCreatedAt().toString(),
+                operation.getAccountSource() != null ? operation.getAccountSource().getAccountNumber() : "N/A",
+                documentText.length() > 5000 ? documentText.substring(0, 5000) : documentText
+            );
+
+            // Construire le corps de la requête Gemini
+            Map<String, Object> requestBody = new HashMap<>();
+            Map<String, Object> content = new HashMap<>();
+            Map<String, String> part = new HashMap<>();
+            part.put("text", prompt);
+            content.put("parts", List.of(part));
+            requestBody.put("contents", List.of(content));
+            
+            // Configuration de génération
+            Map<String, Object> generationConfig = new HashMap<>();
+            generationConfig.put("temperature", 0.3);
+            generationConfig.put("maxOutputTokens", 1000);
+            requestBody.put("generationConfig", generationConfig);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                // Parser la réponse JSON de Gemini
+                JsonNode root = objectMapper.readTree(response.getBody());
+                JsonNode candidates = root.path("candidates");
+                if (candidates.isArray() && candidates.size() > 0) {
+                    JsonNode firstCandidate = candidates.get(0);
+                    JsonNode contentNode = firstCandidate.path("content");
+                    JsonNode parts = contentNode.path("parts");
+                    if (parts.isArray() && parts.size() > 0) {
+                        return parts.get(0).path("text").asText();
+                    }
+                }
+            }
+            
+            log.error("Réponse inattendue de Gemini: {}", response.getBody());
+            return null;
+            
+        } catch (Exception e) {
+            log.error("Erreur lors de l'appel à l'API Gemini", e);
+            return null;
         }
     }
 
@@ -156,7 +234,7 @@ public class AiValidationService {
                 .documentQualityScore(qualityScore)
                 .riskFactors(riskFactors)
                 .analyzedAt(LocalDateTime.now())
-                .modelUsed("gpt-4o-mini")
+                .modelUsed(geminiModel)
                 .processingTimeMs(System.currentTimeMillis() - startTime)
                 .build();
     }
@@ -169,7 +247,7 @@ public class AiValidationService {
                 .confidenceScore(0.0)
                 .analysisSummary(summary)
                 .analyzedAt(LocalDateTime.now())
-                .modelUsed("gpt-4o-mini")
+                .modelUsed(geminiModel != null ? geminiModel : "N/A")
                 .processingTimeMs(System.currentTimeMillis() - startTime)
                 .build();
         

@@ -32,6 +32,11 @@
                         Erreur lors de la connexion OAuth2.
                     </div>
                     
+                    <div th:if="${param.registered}" class="alert alert-success" role="alert">
+                        <i class="bi bi-check-circle"></i> 
+                        Inscription réussie ! Vous pouvez maintenant vous connecter.
+                    </div>
+                    
                     <!-- Login Form -->
                     <form th:action="@{/login}" method="post">
                         <div class="mb-3">

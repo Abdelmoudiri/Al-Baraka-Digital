@@ -36,18 +36,37 @@ public class SecurityConfig {
         http
                 .csrf(csrf->csrf.disable())
                 .sessionManagement(session->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**", "/login/**").permitAll()
+                        .requestMatchers("/auth/**", "/oauth2/**", "/login/**", "/register/**", "/css/**", "/js/**", "/images/**", "/default-ui.css", "/actuator/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                // Form login configuration
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .usernameParameter("username")
+                        .passwordParameter("password")
+                        .defaultSuccessUrl("/dashboard", true)
+                        .failureUrl("/login?error=true")
+                        .permitAll()
                 )
                 // OAuth2 login configuration
                 .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
                         .defaultSuccessUrl("/dashboard", true)
                         .failureUrl("/login?error=oauth2")
+                )
+                // Logout configuration
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout=true")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID", "remember-me")
+                        .permitAll()
                 )
                 // Remember-me configuration
                 .rememberMe(remember -> remember

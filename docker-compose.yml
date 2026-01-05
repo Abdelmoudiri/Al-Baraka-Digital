@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL Database
   mysql:
@@ -42,16 +40,15 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-baraka_user}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-baraka_pass}
       
-      # Spring AI OpenAI Configuration (REQUIRED)
-      SPRING_AI_OPENAI_API_KEY: ${SPRING_AI_OPENAI_API_KEY}
-      SPRING_AI_OPENAI_MODEL: ${SPRING_AI_OPENAI_MODEL:-gpt-4o-mini}
+      # Gemini AI Configuration
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
       
       # OAuth2 Google Configuration (REQUIRED)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       
       # Application Configuration
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
       FILE_UPLOAD_DIR: /app/uploads
       
       # JVM Options
@@ -68,8 +65,8 @@ services:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
 
   # Nginx Reverse Proxy
   nginx:
