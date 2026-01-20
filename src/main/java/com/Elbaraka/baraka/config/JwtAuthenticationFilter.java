@@ -20,31 +20,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtUtil jwt,UserDetailsService userDetailsService)
-    {
-        this.jwtUtil=jwt;
-        this.userDetailsService=userDetailsService;
+    public JwtAuthenticationFilter(JwtUtil jwt, UserDetailsService userDetailsService) {
+        this.jwtUtil = jwt;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String authHeader=request.getHeader("Authorization");
-        String token=null;
-        String username=null;
+        String authHeader = request.getHeader("Authorization");
+        String token = null;
+        String username = null;
 
-        if(authHeader != null && authHeader.startsWith("Bearer "))
-        {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             username = jwtUtil.extractUsername(token);
         }
 
-        if(username !=null && SecurityContextHolder.getContext().getAuthentication() ==null)
-        {
-            UserDetails userDetails=userDetailsService.loadUserByUsername(username);
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if(jwtUtil.validateToken(token, userDetails))
-            {
+            if (jwtUtil.validateToken(token, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
@@ -54,8 +51,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        filterChain.doFilter(request,response);
-        
+        filterChain.doFilter(request, response);
 
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        return path.startsWith("/oauth2/")
+                || path.startsWith("/login/oauth2/")
+                || path.startsWith("/api/agent/operations/pending")
+                || path.startsWith("/error");
     }
 }
